@@ -42,15 +42,23 @@ const BuildPreview = () => {
   const maxCredits = 3;
 
   const createAdvancedPreviewHtml = (code: GeneratedCode) => {
-    console.log('Creating preview HTML with files:', Object.keys(code.files));
+    console.log('Creating comprehensive preview HTML with files:', Object.keys(code.files));
     
-    // Get all the React components
+    // Get all the React components and ensure they exist
     const appTsx = code.files["App.tsx"] || "";
     const headerTsx = code.files["components/Header.tsx"] || "";
     const footerTsx = code.files["components/Footer.tsx"] || "";
     const homeTsx = code.files["pages/Home.tsx"] || "";
     const aboutTsx = code.files["pages/About.tsx"] || "";
     const contactTsx = code.files["pages/Contact.tsx"] || "";
+    
+    // Clean up the component exports to work in the browser environment
+    const cleanComponent = (componentCode: string) => {
+      return componentCode
+        .replace(/import.*?from.*?;/g, '') // Remove imports
+        .replace(/export default.*?;/g, '') // Remove exports
+        .trim();
+    };
     
     // Create a comprehensive HTML document that can run the React app
     const html = `<!DOCTYPE html>
@@ -68,8 +76,9 @@ const BuildPreview = () => {
         body { 
             margin: 0; 
             padding: 0; 
-            font-family: system-ui, -apple-system, sans-serif;
-            background: #f8fafc;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #ffffff;
+            line-height: 1.6;
         }
         * {
             box-sizing: border-box;
@@ -79,40 +88,84 @@ const BuildPreview = () => {
             margin: 0 auto;
             padding: 0 1rem;
         }
+        
+        /* Loading animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Smooth transitions */
+        .transition-all {
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-size: 18px; color: #666;">
+            <div class="loading"></div>
+            <span style="margin-left: 12px;">Loading ${idea}...</span>
+        </div>
+    </div>
+    
     <script type="text/babel">
         const { useState, useEffect } = React;
         const { BrowserRouter: Router, Routes, Route, Link, useLocation } = ReactRouterDOM;
 
+        console.log('Starting React application...');
+
         // Header Component
-        ${headerTsx.replace('export default Header;', '')}
-
+        ${cleanComponent(headerTsx)}
+        
         // Footer Component  
-        ${footerTsx.replace('export default Footer;', '')}
-
+        ${cleanComponent(footerTsx)}
+        
         // Home Component
-        ${homeTsx.replace('export default Home;', '')}
-
+        ${cleanComponent(homeTsx)}
+        
         // About Component
-        ${aboutTsx.replace('export default About;', '')}
-
+        ${cleanComponent(aboutTsx)}
+        
         // Contact Component
-        ${contactTsx.replace('export default Contact;', '')}
-
+        ${cleanComponent(contactTsx)}
+        
         // Main App Component
-        ${appTsx.replace('export default App;', '')}
+        ${cleanComponent(appTsx)}
 
-        // Render the app
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(React.createElement(App));
+        // Render the app with error boundary
+        try {
+            console.log('Rendering React application...');
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(React.createElement(App));
+            console.log('React application rendered successfully!');
+        } catch (error) {
+            console.error('Error rendering React app:', error);
+            document.getElementById('root').innerHTML = \`
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; text-align: center; color: #666;">
+                    <h2 style="color: #e74c3c; margin-bottom: 16px;">Application Error</h2>
+                    <p>There was an error loading the application. Please check the console for details.</p>
+                    <div style="margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #e74c3c;">
+                        <code style="color: #333;">\${error.message}</code>
+                    </div>
+                </div>
+            \`;
+        }
     </script>
 </body>
 </html>`;
     
-    console.log('Generated preview HTML length:', html.length);
+    console.log('Generated comprehensive preview HTML, length:', html.length);
     return html;
   };
 
@@ -139,7 +192,7 @@ const BuildPreview = () => {
           clearInterval(progressInterval);
           return 85; // Wait for AI response before completing
         }
-        return prev + Math.random() * 8 + 2; // More realistic progress increments
+        return prev + Math.random() * 8 + 2;
       });
     }, 800);
 
@@ -163,9 +216,15 @@ const BuildPreview = () => {
       
       setGeneratedCode(data);
       
-      // Create advanced preview HTML
-      const html = createAdvancedPreviewHtml(data);
-      setPreviewHtml(html);
+      // Create advanced preview HTML with error handling
+      try {
+        const html = createAdvancedPreviewHtml(data);
+        setPreviewHtml(html);
+        console.log('Preview HTML created successfully');
+      } catch (previewError) {
+        console.error('Error creating preview HTML:', previewError);
+        // Still mark as complete even if preview fails
+      }
       
       setBuildProgress(100);
       setBuildComplete(true);
@@ -223,7 +282,14 @@ const BuildPreview = () => {
   };
 
   const handleOpenPreview = () => {
-    if (!previewHtml) return;
+    if (!previewHtml) {
+      toast({
+        title: "Preview not available",
+        description: "Please wait for the build to complete first.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     const blob = new Blob([previewHtml], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
@@ -325,15 +391,18 @@ const BuildPreview = () => {
                       </Button>
                     )}
                   </div>
-                </CardHeader>                <CardContent>
+                </CardHeader>
+                <CardContent>
                   <div className="aspect-video bg-gradient-to-br from-electric-blue/10 to-electric-purple/10 rounded-lg border border-white/20 overflow-hidden">
                     {buildComplete && previewHtml ? (
                       <iframe
                         srcDoc={previewHtml}
                         className="w-full h-full border-0"
                         title="Live App Preview"
-                        sandbox="allow-scripts allow-same-origin allow-forms"
+                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
                         style={{ background: 'white' }}
+                        onLoad={() => console.log('Preview iframe loaded successfully')}
+                        onError={(e) => console.error('Preview iframe error:', e)}
                       />
                     ) : isBuilding ? (
                       <div className="flex items-center justify-center h-full">
@@ -390,6 +459,7 @@ const BuildPreview = () => {
                           variant="outline" 
                           className="glass-card hover:bg-white/10"
                           onClick={handleOpenPreview}
+                          disabled={!previewHtml}
                         >
                           <ExternalLink className="w-4 h-4 mr-2" />
                           Open Full Preview
