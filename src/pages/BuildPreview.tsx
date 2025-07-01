@@ -41,36 +41,78 @@ const BuildPreview = () => {
   const [previewHtml, setPreviewHtml] = useState<string>("");
   const maxCredits = 3;
 
-  const createPreviewHtml = (code: GeneratedCode) => {
-    const appTsx = code.files["App.tsx"] || "";
-    const packageJson = code.files["package.json"] || "{}";
+  const createAdvancedPreviewHtml = (code: GeneratedCode) => {
+    console.log('Creating preview HTML with files:', Object.keys(code.files));
     
-    // Create a simple HTML preview with the React code
-    const html = `
-<!DOCTYPE html>
+    // Get all the React components
+    const appTsx = code.files["App.tsx"] || "";
+    const headerTsx = code.files["components/Header.tsx"] || "";
+    const footerTsx = code.files["components/Footer.tsx"] || "";
+    const homeTsx = code.files["pages/Home.tsx"] || "";
+    const aboutTsx = code.files["pages/About.tsx"] || "";
+    const contactTsx = code.files["pages/Contact.tsx"] || "";
+    
+    // Create a comprehensive HTML document that can run the React app
+    const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${idea}</title>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/react-router-dom@6.8.0/dist/umd/react-router-dom.development.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        body { 
+            margin: 0; 
+            padding: 0; 
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f8fafc;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
     <script type="text/babel">
-        ${appTsx.replace('export default App;', `
-        ReactDOM.render(React.createElement(App), document.getElementById('root'));
-        `)}
+        const { useState, useEffect } = React;
+        const { BrowserRouter: Router, Routes, Route, Link, useLocation } = ReactRouterDOM;
+
+        // Header Component
+        ${headerTsx.replace('export default Header;', '')}
+
+        // Footer Component  
+        ${footerTsx.replace('export default Footer;', '')}
+
+        // Home Component
+        ${homeTsx.replace('export default Home;', '')}
+
+        // About Component
+        ${aboutTsx.replace('export default About;', '')}
+
+        // Contact Component
+        ${contactTsx.replace('export default Contact;', '')}
+
+        // Main App Component
+        ${appTsx.replace('export default App;', '')}
+
+        // Render the app
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(App));
     </script>
 </body>
 </html>`;
     
+    console.log('Generated preview HTML length:', html.length);
     return html;
   };
 
@@ -90,19 +132,19 @@ const BuildPreview = () => {
     setBuildComplete(false);
     setPreviewHtml("");
 
-    // Simulate build progress
+    // Simulate realistic build progress
     const progressInterval = setInterval(() => {
       setBuildProgress(prev => {
-        if (prev >= 90) {
+        if (prev >= 85) {
           clearInterval(progressInterval);
-          return 90; // Wait for AI response before completing
+          return 85; // Wait for AI response before completing
         }
-        return prev + Math.random() * 15;
+        return prev + Math.random() * 8 + 2; // More realistic progress increments
       });
-    }, 500);
+    }, 800);
 
     try {
-      console.log('Starting code generation with prompt:', prompt);
+      console.log('Starting comprehensive code generation with prompt:', prompt);
       
       const { data, error } = await supabase.functions.invoke('generate-code', {
         body: { 
@@ -116,11 +158,13 @@ const BuildPreview = () => {
         throw error;
       }
 
-      console.log('Generated code response:', data);
+      console.log('Generated comprehensive code response:', data);
+      console.log('Files generated:', Object.keys(data.files || {}));
+      
       setGeneratedCode(data);
       
-      // Create preview HTML
-      const html = createPreviewHtml(data);
+      // Create advanced preview HTML
+      const html = createAdvancedPreviewHtml(data);
       setPreviewHtml(html);
       
       setBuildProgress(100);
@@ -128,8 +172,8 @@ const BuildPreview = () => {
       setCreditsUsed(prev => prev + 1);
       
       toast({
-        title: "Build completed!",
-        description: "Your application has been generated successfully.",
+        title: "Build completed successfully!",
+        description: `Generated ${Object.keys(data.files || {}).length} files for your application.`,
       });
     } catch (error) {
       console.error('Error generating code:', error);
@@ -148,7 +192,7 @@ const BuildPreview = () => {
   const handleDownloadCode = () => {
     if (!generatedCode) return;
 
-    // Create a zip-like structure by creating multiple files
+    // Create and download all files
     Object.entries(generatedCode.files).forEach(([filename, content]) => {
       const blob = new Blob([content], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
@@ -161,7 +205,7 @@ const BuildPreview = () => {
       URL.revokeObjectURL(url);
     });
 
-    // Also download instructions
+    // Download setup instructions
     const instructionsBlob = new Blob([generatedCode.instructions], { type: 'text/plain' });
     const instructionsUrl = URL.createObjectURL(instructionsBlob);
     const instructionsLink = document.createElement('a');
@@ -173,17 +217,38 @@ const BuildPreview = () => {
     URL.revokeObjectURL(instructionsUrl);
 
     toast({
-      title: "Code downloaded!",
-      description: "All project files have been downloaded to your computer.",
+      title: "Complete project downloaded!",
+      description: `All ${Object.keys(generatedCode.files).length} project files have been downloaded.`,
     });
   };
 
+  const handleOpenPreview = () => {
+    if (!previewHtml) return;
+    
+    const blob = new Blob([previewHtml], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const newWindow = window.open(url, '_blank', 'width=1200,height=800');
+    
+    if (newWindow) {
+      newWindow.onload = () => {
+        URL.revokeObjectURL(url);
+      };
+    } else {
+      toast({
+        title: "Popup blocked",
+        description: "Please allow popups to view the preview in a new window.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const buildSteps = [
-    { name: "Setting up project structure", completed: buildProgress > 10 },
+    { name: "Analyzing requirements", completed: buildProgress > 5 },
+    { name: "Setting up project structure", completed: buildProgress > 15 },
     { name: "Installing dependencies", completed: buildProgress > 30 },
     { name: "Generating components", completed: buildProgress > 50 },
-    { name: "Creating API routes", completed: buildProgress > 70 },
-    { name: "Setting up styling", completed: buildProgress > 85 },
+    { name: "Creating pages and routing", completed: buildProgress > 65 },
+    { name: "Adding styling and interactions", completed: buildProgress > 80 },
     { name: "Finalizing application", completed: buildComplete }
   ];
 
@@ -199,7 +264,7 @@ const BuildPreview = () => {
               Build <span className="gradient-text">Preview</span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Watch your idea come to life in real-time
+              Watch your idea transform into a complete, functional web application
             </p>
           </div>
 
@@ -213,7 +278,7 @@ const BuildPreview = () => {
                     <div>
                       <h3 className="text-lg font-semibold">Building: {idea}</h3>
                       <p className="text-sm text-muted-foreground">
-                        {isBuilding ? "Building in progress..." : buildComplete ? "Build complete!" : "Ready to build"}
+                        {isBuilding ? "AI is crafting your application..." : buildComplete ? "Build complete!" : "Ready to build"}
                       </p>
                     </div>
                     <Badge variant={buildComplete ? "default" : "secondary"}>
@@ -223,13 +288,13 @@ const BuildPreview = () => {
                   
                   <Progress value={buildProgress} className="h-3 mb-4" />
                   
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {buildSteps.map((step, index) => (
                       <div key={index} className="flex items-center space-x-2">
                         {step.completed ? (
-                          <CheckCircle className="w-4 h-4 text-green-400" />
+                          <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
                         ) : (
-                          <Clock className="w-4 h-4 text-muted-foreground" />
+                          <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                         )}
                         <span className={`text-xs ${step.completed ? 'text-foreground' : 'text-muted-foreground'}`}>
                           {step.name}
@@ -246,65 +311,63 @@ const BuildPreview = () => {
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center space-x-2">
                       <Eye className="w-5 h-5" />
-                      <span>Live Preview</span>
+                      <span>Live Application Preview</span>
                     </CardTitle>
                     {buildComplete && previewHtml && (
                       <Button 
                         variant="outline" 
                         size="sm" 
                         className="glass-card hover:bg-white/10"
-                        onClick={() => {
-                          const blob = new Blob([previewHtml], { type: 'text/html' });
-                          const url = URL.createObjectURL(blob);
-                          window.open(url, '_blank');
-                        }}
+                        onClick={handleOpenPreview}
                       >
                         <ExternalLink className="w-4 h-4 mr-2" />
-                        Open in New Tab
+                        Open Full App
                       </Button>
                     )}
                   </div>
-                </CardHeader>
-                <CardContent>
+                </CardHeader>                <CardContent>
                   <div className="aspect-video bg-gradient-to-br from-electric-blue/10 to-electric-purple/10 rounded-lg border border-white/20 overflow-hidden">
                     {buildComplete && previewHtml ? (
                       <iframe
                         srcDoc={previewHtml}
                         className="w-full h-full border-0"
-                        title="App Preview"
-                        sandbox="allow-scripts allow-same-origin"
+                        title="Live App Preview"
+                        sandbox="allow-scripts allow-same-origin allow-forms"
+                        style={{ background: 'white' }}
                       />
                     ) : isBuilding ? (
                       <div className="flex items-center justify-center h-full">
                         <div className="text-center">
-                          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-electric-blue to-electric-purple rounded-full flex items-center justify-center animate-pulse">
-                            <Code className="w-8 h-8 text-white" />
+                          <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-r from-electric-blue to-electric-purple rounded-full flex items-center justify-center animate-pulse">
+                            <Code className="w-10 h-10 text-white" />
                           </div>
-                          <h3 className="text-xl font-semibold mb-2">Building Your App...</h3>
+                          <h3 className="text-xl font-semibold mb-2">Creating Your Application...</h3>
                           <p className="text-muted-foreground mb-4">
-                            AI is generating your application code. This usually takes 1-2 minutes.
+                            AI is generating a complete, functional web application with multiple pages, components, and interactive features.
                           </p>
                           <div className="text-sm text-muted-foreground">
-                            Progress: {Math.round(buildProgress)}%
+                            Progress: {Math.round(buildProgress)}% • {buildSteps.filter(s => s.completed).length}/{buildSteps.length} steps complete
                           </div>
                         </div>
                       </div>
                     ) : (
                       <div className="flex items-center justify-center h-full">
                         <div className="text-center">
-                          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-electric-blue to-electric-purple rounded-full flex items-center justify-center">
-                            <Code className="w-8 h-8 text-white" />
+                          <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-r from-electric-blue to-electric-purple rounded-full flex items-center justify-center">
+                            <Code className="w-10 h-10 text-white" />
                           </div>
-                          <h3 className="text-xl font-semibold mb-2">Ready to Build</h3>
+                          <h3 className="text-xl font-semibold mb-2">Ready to Build Your App</h3>
                           <p className="text-muted-foreground mb-4">
-                            Generate a complete, production-ready application from your optimized prompt.
+                            Generate a complete, production-ready web application with multiple pages, 
+                            interactive components, and professional design.
                           </p>
                           <Button 
                             onClick={handleStartBuild}
                             disabled={creditsUsed >= maxCredits}
                             className="bg-gradient-to-r from-electric-blue to-electric-purple hover:opacity-90"
+                            size="lg"
                           >
-                            <Play className="w-4 h-4 mr-2" />
+                            <Play className="w-5 h-5 mr-2" />
                             {creditsUsed >= maxCredits ? "Upgrade to Continue" : "Start Building"}
                           </Button>
                         </div>
@@ -313,30 +376,37 @@ const BuildPreview = () => {
                   </div>
                   
                   {buildComplete && generatedCode && (
-                    <div className="mt-4 flex justify-center space-x-3">
-                      <Button 
-                        onClick={handleDownloadCode}
-                        className="bg-gradient-to-r from-electric-blue to-electric-purple hover:opacity-90"
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Download Code
-                      </Button>
-                      <Button variant="outline" className="glass-card hover:bg-white/10">
-                        <FileText className="w-4 h-4 mr-2" />
-                        View Files
-                      </Button>
-                    </div>
-                  )}
-                  
-                  {generatedCode?.techStack && (
-                    <div className="mt-4 text-center">
-                      <p className="text-sm text-muted-foreground mb-2">Tech Stack:</p>
-                      <div className="flex justify-center space-x-2 flex-wrap">
-                        {generatedCode.techStack.map((tech) => (
-                          <Badge key={tech} variant="secondary" className="text-xs">
-                            {tech}
-                          </Badge>
-                        ))}
+                    <div className="mt-6 space-y-4">
+                      <div className="flex justify-center space-x-3">
+                        <Button 
+                          onClick={handleDownloadCode}
+                          className="bg-gradient-to-r from-electric-blue to-electric-purple hover:opacity-90"
+                          size="lg"
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download Complete Project
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="glass-card hover:bg-white/10"
+                          onClick={handleOpenPreview}
+                        >
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          Open Full Preview
+                        </Button>
+                      </div>
+                      
+                      <div className="text-center">
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Generated {Object.keys(generatedCode.files).length} files • Ready to deploy
+                        </p>
+                        <div className="flex justify-center space-x-2 flex-wrap">
+                          {generatedCode.techStack.map((tech) => (
+                            <Badge key={tech} variant="secondary" className="text-xs">
+                              {tech}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -390,7 +460,7 @@ const BuildPreview = () => {
                     onClick={handleDownloadCode}
                   >
                     <Download className="w-4 h-4 mr-2" />
-                    Export Code
+                    Export Project
                   </Button>
                   <Link to="/feedback">
                     <Button 
@@ -415,6 +485,14 @@ const BuildPreview = () => {
                     <h4 className="font-semibold mb-1">Project Name</h4>
                     <p className="text-sm text-muted-foreground">{idea}</p>
                   </div>
+                  {generatedCode?.files && (
+                    <div>
+                      <h4 className="font-semibold mb-1">Generated Files</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {Object.keys(generatedCode.files).length} files created
+                      </p>
+                    </div>
+                  )}
                   {generatedCode?.techStack ? (
                     <div>
                       <h4 className="font-semibold mb-1">Tech Stack</h4>
@@ -430,7 +508,7 @@ const BuildPreview = () => {
                     <div>
                       <h4 className="font-semibold mb-1">Expected Tech Stack</h4>
                       <div className="flex flex-wrap gap-1">
-                        {["React", "TypeScript", "Tailwind", "Vite"].map((tech) => (
+                        {["React", "TypeScript", "Tailwind", "React Router"].map((tech) => (
                           <Badge key={tech} variant="secondary" className="text-xs">
                             {tech}
                           </Badge>
