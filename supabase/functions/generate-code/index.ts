@@ -34,75 +34,77 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are an expert React developer who creates complete, production-ready web applications. 
+            content: `You are an expert full-stack developer specializing in React applications. Your task is to generate a complete, production-ready web application based on the user's requirements.
 
-CRITICAL REQUIREMENTS:
-1. Generate a COMPLETE, FUNCTIONAL React application that implements EXACTLY what the user requested
-2. Create ALL necessary components, pages, hooks, and utilities as separate files
-3. Use modern React patterns with TypeScript, hooks, and proper state management
-4. Include comprehensive functionality - forms, validation, state management, routing
-5. Use Tailwind CSS for beautiful, responsive styling
-6. Add realistic data, interactive features, and professional UI components
-7. Include proper error handling, loading states, and user feedback
-8. Make it production-ready with proper file organization
-
-RETURN FORMAT: Return ONLY a valid JSON object with this exact structure:
+CRITICAL: You MUST return ONLY a valid JSON object with this EXACT structure:
 {
   "files": {
-    "App.tsx": "complete React app code",
-    "components/ComponentName.tsx": "individual component files",
-    "pages/PageName.tsx": "page component files",
+    "App.tsx": "complete React app code with routing",
+    "components/Header.tsx": "header component code",
+    "components/Footer.tsx": "footer component code", 
+    "pages/Home.tsx": "home page component",
+    "pages/About.tsx": "about page component",
+    "pages/Contact.tsx": "contact page component",
     "hooks/useCustomHook.ts": "custom hooks if needed",
     "utils/helpers.ts": "utility functions if needed",
     "types/index.ts": "TypeScript interfaces",
-    "package.json": "complete package.json with dependencies"
+    "package.json": "complete package.json"
   },
-  "instructions": "detailed setup instructions",
-  "techStack": ["React", "TypeScript", "Tailwind CSS", "other technologies"],
-  "deployUrl": "example deployment URL"
+  "instructions": "detailed setup and deployment instructions",
+  "techStack": ["React", "TypeScript", "Tailwind CSS", "React Router"],
+  "deployUrl": "example-app.vercel.app"
 }
 
-TECHNICAL REQUIREMENTS:
-- Use React 18+ with TypeScript and strict typing
-- Include React Router for navigation between pages
-- Use Tailwind CSS with modern design patterns
-- Add interactive elements (forms, buttons, modals, animations)  
-- Include proper component structure and file organization
-- Add realistic content and data
-- Create multiple focused component files (never put everything in one file)
-- Include loading states, error handling, and form validation
-- Make it responsive and professional looking
-- Add smooth animations and modern UI patterns
+REQUIREMENTS:
+1. Generate REAL, FUNCTIONAL code - not placeholders or comments
+2. Use React 18+ with TypeScript and strict typing
+3. Include React Router for multi-page navigation
+4. Use Tailwind CSS for beautiful, responsive styling
+5. Create separate component files for better organization
+6. Include interactive elements (forms, buttons, modals, animations)
+7. Add realistic content and data, not Lorem Ipsum
+8. Implement proper error handling and loading states
+9. Make it mobile-responsive and professional
+10. Include proper TypeScript interfaces and types
 
-IMPORTANT: 
-- Actually implement the features requested in the prompt, don't just create placeholders
-- Create separate files for each component/page/hook
-- Include real functionality, not just static content
-- Make the UI beautiful and modern with Tailwind CSS
-- Add proper TypeScript types and interfaces`
+TECH STACK:
+- React 18 with TypeScript
+- React Router DOM for navigation
+- Tailwind CSS for styling
+- Lucide React for icons
+- Modern React patterns (hooks, functional components)
+
+IMPORTANT:
+- Generate complete, working applications that implement the user's requirements
+- Each file should be fully functional, not just templates
+- Include realistic data and proper functionality
+- Make the UI beautiful and modern
+- Add smooth interactions and animations
+- Ensure responsive design for all screen sizes
+
+DO NOT include explanations, markdown, or any text outside the JSON response.`
           },
           { 
             role: 'user', 
-            content: `Create a complete, production-ready web application based on this detailed prompt:
+            content: `Create a complete, production-ready React web application based on this prompt:
 
 ${prompt}
 
 Project Name: ${projectName}
 
-REQUIREMENTS:
-- Implement ALL features mentioned in the prompt
-- Create separate component files for better organization  
-- Use modern React patterns with TypeScript
-- Include proper routing, state management, and data handling
-- Add beautiful UI with Tailwind CSS
-- Include realistic content and interactive functionality
-- Make it fully functional, not just placeholders
-- Add proper error handling and loading states
+Generate a fully functional application with:
+- Multiple pages with React Router
+- Beautiful UI components with Tailwind CSS
+- Interactive features and forms
+- Responsive design
+- Proper TypeScript types
+- Real functionality (not placeholders)
+- Professional styling and animations
 
-Generate a complete, working application that fulfills all the requirements in the prompt.`
+Make it a complete, working application that fulfills the requirements in the prompt.`
           }
         ],
-        temperature: 0.2,
+        temperature: 0.3,
         max_tokens: 4000,
       }),
     });
@@ -115,7 +117,7 @@ Generate a complete, working application that fulfills all the requirements in t
     let generatedCode;
 
     try {
-      const content = data.choices[0].message.content;
+      const content = data.choices[0].message.content.trim();
       console.log('Raw AI response length:', content.length);
       
       // Extract JSON from the response
@@ -129,7 +131,7 @@ Generate a complete, working application that fulfills all the requirements in t
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError);
       
-      // Enhanced fallback - create a more comprehensive application
+      // Comprehensive fallback - create a fully functional application
       const safeName = projectName.replace(/[^a-zA-Z0-9\s]/g, '').trim() || 'Modern Web App';
       const safeSlug = safeName.toLowerCase().replace(/\s+/g, '-');
       
@@ -137,138 +139,135 @@ Generate a complete, working application that fulfills all the requirements in t
         files: {
           "App.tsx": `import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from '@/components/ui/sonner';
-import Navbar from './components/Navbar';
+import Header from './components/Header';
 import Footer from './components/Footer';
 import Home from './pages/Home';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Services from './pages/Services';
-import './App.css';
-
-const queryClient = new QueryClient();
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <div className="min-h-screen bg-background">
-          <Navbar />
-          <main className="flex-1">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/services" element={<Services />} />
-              <Route path="/contact" element={<Contact />} />
-            </Routes>
-          </main>
-          <Footer />
-          <Toaster />
-        </div>
-      </Router>
-    </QueryClientProvider>
+    <Router>
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <Header />
+        <main className="flex-1">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/services" element={<Services />} />
+            <Route path="/contact" element={<Contact />} />
+          </Routes>
+        </main>
+        <Footer />
+      </div>
+    </Router>
   );
 }
 
 export default App;`,
 
-          "components/Navbar.tsx": `import React, { useState } from 'react';
+          "components/Header.tsx": `import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
-const Navbar = () => {
-  const [isOpen, setIsOpen] = useState(false);
+const Header = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
 
-  const isActive = (path: string) => location.pathname === path;
-
-  const navItems = [
-    { name: 'Home', path: '/' },
-    { name: 'About', path: '/about' },
-    { name: 'Services', path: '/services' },
-    { name: 'Contact', path: '/contact' },
+  const navigation = [
+    { name: 'Home', href: '/', current: location.pathname === '/' },
+    { name: 'About', href: '/about', current: location.pathname === '/about' },
+    { name: 'Services', href: '/services', current: location.pathname === '/services' },
+    { name: 'Contact', href: '/contact', current: location.pathname === '/contact' },
   ];
 
   return (
-    <nav className="bg-white shadow-lg sticky top-0 z-50">
+    <header className="bg-white shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <Link to="/" className="text-2xl font-bold text-primary">
-            ${safeName}
-          </Link>
+        <div className="flex justify-between items-center py-6">
+          <div className="flex items-center">
+            <Link to="/" className="text-2xl font-bold text-blue-600">
+              ${safeName}
+            </Link>
+          </div>
           
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-8">
-            {navItems.map((item) => (
+          <nav className="hidden md:flex space-x-8">
+            {navigation.map((item) => (
               <Link
-                key={item.path}
-                to={item.path}
-                className={\`px-3 py-2 rounded-md text-sm font-medium transition-colors \${
-                  isActive(item.path)
-                    ? 'text-primary bg-primary/10'
-                    : 'text-gray-700 hover:text-primary hover:bg-gray-50'
-                }\`}
+                key={item.name}
+                to={item.href}
+                className={\`\${
+                  item.current
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-700 hover:text-blue-600'
+                } px-3 py-2 text-sm font-medium transition-colors duration-200\`}
               >
                 {item.name}
               </Link>
             ))}
+          </nav>
+
+          <div className="hidden md:flex items-center space-x-4">
+            <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+              Get Started
+            </button>
           </div>
 
-          <Button className="hidden md:block">
-            Get Started
-          </Button>
-
-          {/* Mobile menu button */}
-          <button 
-            onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden text-gray-700 hover:text-primary"
-          >
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          <div className="md:hidden">
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="text-gray-700 hover:text-blue-600"
+            >
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
 
-        {/* Mobile Navigation */}
-        {isOpen && (
-          <div className="md:hidden py-4 border-t">
-            <div className="flex flex-col space-y-2">
-              {navItems.map((item) => (
+        {isMenuOpen && (
+          <div className="md:hidden">
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t">
+              {navigation.map((item) => (
                 <Link
-                  key={item.path}
-                  to={item.path}
-                  className="px-3 py-2 text-gray-700 hover:text-primary hover:bg-gray-50 rounded-md"
-                  onClick={() => setIsOpen(false)}
+                  key={item.name}
+                  to={item.href}
+                  className={\`\${
+                    item.current
+                      ? 'text-blue-600 bg-blue-100'
+                      : 'text-gray-700 hover:text-blue-600 hover:bg-gray-100'
+                  } block px-3 py-2 rounded-md text-base font-medium transition-colors\`}
+                  onClick={() => setIsMenuOpen(false)}
                 >
                   {item.name}
                 </Link>
               ))}
-              <Button className="mx-3 mt-2">
+              <button className="w-full mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
                 Get Started
-              </Button>
+              </button>
             </div>
           </div>
         )}
       </div>
-    </nav>
+    </header>
   );
 };
 
-export default Navbar;`,
+export default Header;`,
 
           "components/Footer.tsx": `import React from 'react';
 import { Link } from 'react-router-dom';
+import { Mail, Phone, MapPin } from 'lucide-react';
 
 const Footer = () => {
   return (
-    <footer className="bg-gray-900 text-white py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid md:grid-cols-4 gap-8">
-          <div className="md:col-span-2">
+    <footer className="bg-gray-900 text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="col-span-1 md:col-span-2">
             <h3 className="text-2xl font-bold mb-4">${safeName}</h3>
-            <p className="text-gray-300 mb-4 max-w-md">
-              Building amazing digital experiences with cutting-edge technology. 
-              We create solutions that drive results and exceed expectations.
+            <p className="text-gray-300 mb-6 max-w-md">
+              We're dedicated to providing exceptional services and innovative solutions 
+              that help businesses thrive in the digital age.
             </p>
             <div className="flex space-x-4">
               <a href="#" className="text-gray-300 hover:text-white transition-colors">
@@ -296,17 +295,25 @@ const Footer = () => {
           
           <div>
             <h4 className="text-lg font-semibold mb-4">Contact Info</h4>
-            <div className="space-y-2 text-gray-300">
-              <p>123 Innovation Street</p>
-              <p>Tech City, TC 12345</p>
-              <p>Phone: (555) 123-4567</p>
-              <p>Email: info@${safeSlug}.com</p>
+            <div className="space-y-3">
+              <div className="flex items-center">
+                <Mail className="w-5 h-5 mr-2 text-gray-400" />
+                <span className="text-gray-300">hello@${safeSlug}.com</span>
+              </div>
+              <div className="flex items-center">
+                <Phone className="w-5 h-5 mr-2 text-gray-400" />
+                <span className="text-gray-300">+1 (555) 123-4567</span>
+              </div>
+              <div className="flex items-center">
+                <MapPin className="w-5 h-5 mr-2 text-gray-400" />
+                <span className="text-gray-300">San Francisco, CA</span>
+              </div>
             </div>
           </div>
         </div>
         
-        <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-300">
-          <p>&copy; 2024 ${safeName}. All rights reserved.</p>
+        <div className="border-t border-gray-700 mt-8 pt-8 text-center">
+          <p className="text-gray-300">&copy; 2024 ${safeName}. All rights reserved.</p>
         </div>
       </div>
     </footer>
@@ -315,33 +322,26 @@ const Footer = () => {
 
 export default Footer;`,
 
-          "pages/Home.tsx": `import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Star, Users, Zap, Shield } from 'lucide-react';
+          "pages/Home.tsx": `import React from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, CheckCircle, Star, Users, Zap, Shield } from 'lucide-react';
 
 const Home = () => {
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
-
   const features = [
     {
-      icon: <Zap className="w-8 h-8 text-primary" />,
+      icon: <Zap className="w-8 h-8 text-blue-600" />,
       title: "Lightning Fast",
       description: "Optimized performance for the best user experience"
     },
     {
-      icon: <Shield className="w-8 h-8 text-primary" />,
+      icon: <Shield className="w-8 h-8 text-blue-600" />,
       title: "Secure & Reliable",
-      description: "Enterprise-grade security and 99.9% uptime guarantee"
+      description: "Enterprise-grade security with 99.9% uptime"
     },
     {
-      icon: <Users className="w-8 h-8 text-primary" />,
+      icon: <Users className="w-8 h-8 text-blue-600" />,
       title: "Team Collaboration",
-      description: "Work together seamlessly with powerful collaboration tools"
+      description: "Work together seamlessly with powerful tools"
     }
   ];
 
@@ -349,96 +349,98 @@ const Home = () => {
     {
       name: "Sarah Johnson",
       role: "CEO, TechCorp",
-      content: "This platform has transformed how we work. Highly recommended!",
+      content: "This platform transformed our business operations completely.",
       rating: 5
     },
     {
       name: "Mike Chen",
       role: "Product Manager",
-      content: "Incredible features and outstanding support. A game-changer!",
+      content: "Outstanding service and incredible results. Highly recommended!",
       rating: 5
     }
   ];
 
   return (
-    <div className={\`transition-all duration-1000 \${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}\`}>
+    <div className="bg-white">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">
-            Welcome to <span className="text-yellow-300">${safeName}</span>
-          </h1>
-          <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
-            Experience the future of web applications with our cutting-edge platform 
-            designed to boost your productivity and streamline your workflow.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
-              Get Started Free
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600">
-              Watch Demo
-            </Button>
+      <section className="relative bg-gradient-to-r from-blue-600 to-purple-700 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+          <div className="text-center">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">
+              Welcome to <span className="text-yellow-300">${safeName}</span>
+            </h1>
+            <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
+              Transform your business with our cutting-edge solutions designed 
+              to boost productivity and drive success in the digital age.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                to="/contact"
+                className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors inline-flex items-center"
+              >
+                Get Started
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Link>
+              <Link
+                to="/about"
+                className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
+              >
+                Learn More
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Why Choose ${safeName}?
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Powerful features designed to help you succeed
+              Discover the powerful features that make us the preferred choice
             </p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex justify-center mb-4">
-                    {feature.icon}
-                  </div>
-                  <CardTitle>{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600">{feature.description}</p>
-                </CardContent>
-              </Card>
+              <div key={index} className="text-center p-6 rounded-lg hover:shadow-lg transition-shadow">
+                <div className="flex justify-center mb-4">
+                  {feature.icon}
+                </div>
+                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                <p className="text-gray-600">{feature.description}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-20">
+      <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              What Our Customers Say
+              What Our Clients Say
             </h2>
           </div>
           
           <div className="grid md:grid-cols-2 gap-8">
             {testimonials.map((testimonial, index) => (
-              <Card key={index} className="p-6">
-                <CardContent className="pt-0">
-                  <div className="flex mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                    ))}
-                  </div>
-                  <p className="text-gray-600 mb-4 italic">"{testimonial.content}"</p>
-                  <div>
-                    <p className="font-semibold">{testimonial.name}</p>
-                    <p className="text-sm text-gray-500">{testimonial.role}</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <div key={index} className="bg-white p-8 rounded-lg shadow-md">
+                <div className="flex mb-4">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                  ))}
+                </div>
+                <p className="text-gray-600 mb-6 italic">"{testimonial.content}"</p>
+                <div>
+                  <p className="font-semibold text-gray-900">{testimonial.name}</p>
+                  <p className="text-sm text-gray-500">{testimonial.role}</p>
+                </div>
+              </div>
             ))}
           </div>
         </div>
@@ -451,12 +453,15 @@ const Home = () => {
             Ready to Get Started?
           </h2>
           <p className="text-xl mb-8 max-w-2xl mx-auto">
-            Join thousands of satisfied users who have transformed their workflow with ${safeName}.
+            Join thousands of satisfied customers who trust ${safeName} for their success.
           </p>
-          <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
-            Start Your Free Trial
+          <Link
+            to="/contact"
+            className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors inline-flex items-center"
+          >
+            Start Your Journey
             <ArrowRight className="ml-2 w-5 h-5" />
-          </Button>
+          </Link>
         </div>
       </section>
     </div>
@@ -466,78 +471,83 @@ const Home = () => {
 export default Home;`,
 
           "pages/About.tsx": `import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { CheckCircle } from 'lucide-react';
 
 const About = () => {
+  const values = [
+    {
+      title: "Innovation",
+      description: "We constantly push boundaries to deliver cutting-edge solutions"
+    },
+    {
+      title: "Quality",
+      description: "Excellence in every aspect of our work is non-negotiable"
+    },
+    {
+      title: "Customer Focus",
+      description: "Your success is our priority, always"
+    },
+    {
+      title: "Integrity",
+      description: "We build trust through transparency and honest communication"
+    }
+  ];
+
   const team = [
     {
       name: "Alex Thompson",
       role: "CEO & Founder",
-      bio: "Visionary leader with 15+ years in tech innovation"
+      bio: "Visionary leader with 15+ years in technology innovation"
     },
     {
       name: "Sarah Davis",
-      role: "CTO",
+      role: "CTO", 
       bio: "Full-stack architect passionate about scalable solutions"
     },
     {
       name: "Michael Rodriguez",
       role: "Lead Designer",
-      bio: "UX expert creating beautiful, intuitive user experiences"
-    }
-  ];
-
-  const values = [
-    {
-      title: "Innovation",
-      description: "Constantly pushing boundaries to deliver cutting-edge solutions"
-    },
-    {
-      title: "Quality",
-      description: "Committed to excellence in every aspect of our work"
-    },
-    {
-      title: "Customer Focus",
-      description: "Your success is our priority, always"
+      bio: "UX expert creating beautiful, intuitive experiences"
     }
   ];
 
   return (
-    <div className="py-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Hero Section */}
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-            About <span className="text-primary">${safeName}</span>
-          </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            We're a passionate team of innovators dedicated to creating exceptional 
-            digital experiences that make a real difference in how people work and live.
-          </p>
-        </div>
-
-        {/* Mission Section */}
-        <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Mission</h2>
-            <p className="text-gray-600 mb-6">
-              At ${safeName}, we believe technology should empower people, not complicate their lives. 
-              Our mission is to create intuitive, powerful tools that help businesses and individuals 
-              achieve their goals more efficiently.
+    <div className="bg-white">
+      {/* Hero Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+              About ${projectName || 'Our Company'}
+            </h1>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              We're a passionate team of innovators dedicated to creating exceptional 
+              digital experiences that make a real difference.
             </p>
-            <p className="text-gray-600 mb-6">
-              We combine cutting-edge technology with thoughtful design to deliver solutions 
-              that are both powerful and easy to use.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary">Innovation</Badge>
-              <Badge variant="secondary">Excellence</Badge>
-              <Badge variant="secondary">Customer-First</Badge>
-              <Badge variant="secondary">Reliability</Badge>
-            </div>
           </div>
-          <div className="relative">
+        </div>
+      </section>
+
+      {/* Mission Section */}
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Mission</h2>
+              <p className="text-gray-600 mb-6">
+                We believe technology should empower people, not complicate their lives. 
+                Our mission is to create intuitive, powerful solutions that help businesses 
+                and individuals achieve their goals more efficiently.
+              </p>
+              <p className="text-gray-600 mb-8">
+                Through innovative design and cutting-edge technology, we deliver 
+                solutions that are both powerful and easy to use.
+              </p>
+              <div className="flex items-center">
+                <CheckCircle className="w-6 h-6 text-green-500 mr-3" />
+                <span className="text-gray-700">Trusted by 10,000+ customers worldwide</span>
+              </div>
+            </div>
             <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-8 text-white">
               <h3 className="text-2xl font-bold mb-4">Our Vision</h3>
               <p className="text-blue-100">
@@ -547,47 +557,47 @@ const About = () => {
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Values Section */}
-        <div className="mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">Our Values</h2>
-          <div className="grid md:grid-cols-3 gap-8">
+      {/* Values Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Our Values</h2>
+            <p className="text-xl text-gray-600">The principles that guide everything we do</p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {values.map((value, index) => (
-              <Card key={index} className="text-center">
-                <CardHeader>
-                  <CardTitle className="text-primary">{value.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600">{value.description}</p>
-                </CardContent>
-              </Card>
+              <div key={index} className="text-center p-6 bg-white rounded-lg shadow-md">
+                <h3 className="text-xl font-semibold text-blue-600 mb-3">{value.title}</h3>
+                <p className="text-gray-600">{value.description}</p>
+              </div>
             ))}
           </div>
         </div>
+      </section>
 
-        {/* Team Section */}
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Meet Our Team</h2>
-          <p className="text-xl text-gray-600">
-            The talented people behind ${safeName}
-          </p>
-        </div>
-        
-        <div className="grid md:grid-cols-3 gap-8">
-          {team.map((member, index) => (
-            <Card key={index} className="text-center">
-              <CardHeader>
-                <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mx-auto mb-4"></div>
-                <CardTitle>{member.name}</CardTitle>
-                <p className="text-primary font-medium">{member.role}</p>
-              </CardHeader>
-              <CardContent>
+      {/* Team Section */}
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Meet Our Team</h2>
+            <p className="text-xl text-gray-600">The talented people behind our success</p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            {team.map((member, index) => (
+              <div key={index} className="text-center">
+                <div className="w-32 h-32 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mx-auto mb-4"></div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-1">{member.name}</h3>
+                <p className="text-blue-600 font-medium mb-3">{member.role}</p>
                 <p className="text-gray-600">{member.bio}</p>
-              </CardContent>
-            </Card>
-          ))}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 };
@@ -595,10 +605,7 @@ const About = () => {
 export default About;`,
 
           "pages/Services.tsx": `import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Check, ArrowRight } from 'lucide-react';
+import { CheckCircle, ArrowRight } from 'lucide-react';
 
 const Services = () => {
   const services = [
@@ -623,114 +630,97 @@ const Services = () => {
     {
       title: "Consulting",
       description: "Technical consulting and architecture planning",
-      features: ["System Architecture", "Tech Stack Selection", "Performance Audit", "Best Practices"],
-      price: "Starting at $299/hour"
-    }
-  ];
-
-  const process = [
-    {
-      step: "1",
-      title: "Discovery",
-      description: "We understand your needs and goals"
-    },
-    {
-      step: "2", 
-      title: "Planning",
-      description: "Create detailed project roadmap"
-    },
-    {
-      step: "3",
-      title: "Development",
-      description: "Build with regular updates and feedback"
-    },
-    {
-      step: "4",
-      title: "Launch",
-      description: "Deploy and provide ongoing support"
+      features: ["System Architecture", "Tech Stack Selection", "Performance Audit", "Code Review"],
+      price: "$199/hour"
     }
   ];
 
   return (
-    <div className="py-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Hero Section */}
-        <div className="text-center mb-16">
+    <div className="bg-white">
+      {/* Hero Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-            Our <span className="text-primary">Services</span>
+            Our Services
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Comprehensive digital solutions to help your business grow and succeed in the modern world.
+            Comprehensive digital solutions to help your business grow and succeed
           </p>
         </div>
+      </section>
 
-        {/* Services Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-8 mb-16">
-          {services.map((service, index) => (
-            <Card key={index} className="relative hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex justify-between items-start mb-2">
-                  <CardTitle className="text-xl">{service.title}</CardTitle>
-                  <Badge variant="outline">{service.price}</Badge>
+      {/* Services Grid */}
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-8">
+            {services.map((service, index) => (
+              <div key={index} className="bg-white border border-gray-200 rounded-lg p-8 hover:shadow-lg transition-shadow">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-2xl font-semibold text-gray-900">{service.title}</h3>
+                  <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">
+                    {service.price}
+                  </span>
                 </div>
-                <p className="text-gray-600">{service.description}</p>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3 mb-6">
+                <p className="text-gray-600 mb-6">{service.description}</p>
+                
+                <ul className="space-y-3 mb-8">
                   {service.features.map((feature, idx) => (
                     <li key={idx} className="flex items-center">
-                      <Check className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
                       <span className="text-gray-700">{feature}</span>
                     </li>
                   ))}
                 </ul>
-                <Button className="w-full">
+                
+                <button className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center">
                   Get Started
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Process Section */}
-        <div className="bg-gray-50 rounded-2xl p-8 mb-16">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Our Process</h2>
-            <p className="text-xl text-gray-600">
-              How we deliver exceptional results for every project
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-4 gap-8">
-            {process.map((item, index) => (
-              <div key={index} className="text-center">
-                <div className="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">
-                  {item.step}
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
-                <p className="text-gray-600 text-sm">{item.description}</p>
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </button>
               </div>
             ))}
           </div>
         </div>
+      </section>
 
-        {/* CTA Section */}
-        <div className="text-center bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl p-12">
-          <h2 className="text-3xl font-bold mb-4">Ready to Start Your Project?</h2>
-          <p className="text-xl mb-8 text-blue-100">
-            Let's discuss how we can help bring your vision to life.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
-              Get Free Quote
-            </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600">
-              Schedule Consultation
-            </Button>
+      {/* Process Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Our Process</h2>
+            <p className="text-xl text-gray-600">How we deliver exceptional results</p>
+          </div>
+          
+          <div className="grid md:grid-cols-4 gap-8">
+            {[
+              { step: "1", title: "Discovery", description: "Understanding your needs and goals" },
+              { step: "2", title: "Planning", description: "Creating detailed project roadmap" },
+              { step: "3", title: "Development", description: "Building with regular updates" },
+              { step: "4", title: "Launch", description: "Deployment and ongoing support" }
+            ].map((item, index) => (
+              <div key={index} className="text-center">
+                <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">
+                  {item.step}
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
+                <p className="text-gray-600">{item.description}</p>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-blue-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-bold mb-4">Ready to Start Your Project?</h2>
+          <p className="text-xl mb-8 text-blue-100">
+            Let's discuss how we can help bring your vision to life
+          </p>
+          <button className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+            Get Free Quote
+          </button>
+        </div>
+      </section>
     </div>
   );
 };
@@ -738,12 +728,6 @@ const Services = () => {
 export default Services;`,
 
           "pages/Contact.tsx": `import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
 import { Mail, Phone, MapPin, Clock } from 'lucide-react';
 
 const Contact = () => {
@@ -762,7 +746,7 @@ const Contact = () => {
     // Simulate form submission
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    toast.success('Message sent successfully! We\'ll get back to you soon.');
+    alert('Thank you for your message! We\\'ll get back to you soon.');
     setFormData({ name: '', email: '', subject: '', message: '' });
     setIsSubmitting(false);
   };
@@ -788,131 +772,141 @@ const Contact = () => {
     {
       icon: <MapPin className="w-6 h-6" />,
       title: "Office",
-      details: "123 Innovation Street, Tech City, TC 12345",
-      subtitle: "Come say hello at our office"
+      details: "123 Tech Street, San Francisco, CA 94105",
+      subtitle: "Visit our headquarters"
     },
     {
       icon: <Clock className="w-6 h-6" />,
-      title: "Working Hours",
+      title: "Hours",
       details: "Monday - Friday: 9:00 AM - 6:00 PM",
-      subtitle: "Weekend support available"
+      subtitle: "Pacific Standard Time"
     }
   ];
 
   return (
-    <div className="py-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-16">
+    <div className="bg-white">
+      {/* Hero Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-            Get In <span className="text-primary">Touch</span>
+            Get In Touch
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Have a question or want to work together? We'd love to hear from you. 
-            Send us a message and we'll respond as soon as possible.
+            Have a question or want to work together? We'd love to hear from you.
           </p>
         </div>
+      </section>
 
-        <div className="grid lg:grid-cols-2 gap-12">
-          {/* Contact Form */}
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-2xl">Send us a message</CardTitle>
-            </CardHeader>
-            <CardContent>
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12">
+            {/* Contact Form */}
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Send us a message</h2>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                      Name
+                    </label>
+                    <input
+                      type="text"
                       id="name"
                       name="name"
                       value={formData.name}
                       onChange={handleChange}
-                      placeholder="Your full name"
                       required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Your full name"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
                       id="email"
                       name="email"
-                      type="email"
                       value={formData.email}
                       onChange={handleChange}
-                      placeholder="your.email@example.com"
                       required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="your.email@example.com"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="subject">Subject</Label>
-                  <Input
+                <div>
+                  <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
+                    Subject
+                  </label>
+                  <input
+                    type="text"
                     id="subject"
                     name="subject"
                     value={formData.subject}
                     onChange={handleChange}
-                    placeholder="What's this about?"
                     required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="What's this about?"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="message">Message</Label>
-                  <Textarea
+                <div>
+                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+                    Message
+                  </label>
+                  <textarea
                     id="message"
                     name="message"
                     value={formData.message}
                     onChange={handleChange}
-                    placeholder="Tell us more about your project or question..."
-                    rows={6}
                     required
+                    rows={6}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Tell us more about your project..."
                   />
                 </div>
 
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
                   {isSubmitting ? 'Sending...' : 'Send Message'}
-                </Button>
+                </button>
               </form>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Contact Information */}
-          <div className="space-y-6">
-            {contactInfo.map((info, index) => (
-              <Card key={index} className="p-6">
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0 w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
-                    {info.icon}
+            {/* Contact Information */}
+            <div className="space-y-8">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Contact Information</h2>
+                <p className="text-gray-600 mb-8">
+                  Ready to take the next step? Get in touch with our team and let's discuss 
+                  how we can help bring your ideas to life.
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                {contactInfo.map((info, index) => (
+                  <div key={index} className="flex items-start space-x-4">
+                    <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                      {info.icon}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">{info.title}</h3>
+                      <p className="text-gray-900 mb-1">{info.details}</p>
+                      <p className="text-sm text-gray-500">{info.subtitle}</p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                      {info.title}
-                    </h3>
-                    <p className="text-gray-900 mb-1">{info.details}</p>
-                    <p className="text-sm text-gray-500">{info.subtitle}</p>
-                  </div>
-                </div>
-              </Card>
-            ))}
+                ))}
+              </div>
+            </div>
           </div>
         </div>
-
-        {/* Additional CTA */}
-        <div className="mt-16 text-center bg-gray-50 rounded-2xl p-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Prefer to schedule a call?
-          </h2>
-          <p className="text-xl text-gray-600 mb-8">
-            Book a free 30-minute consultation to discuss your project in detail.
-          </p>
-          <Button size="lg">
-            Schedule Free Consultation
-          </Button>
-        </div>
-      </div>
+      </section>
     </div>
   );
 };
@@ -932,9 +926,7 @@ export default Contact;`,
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.8.0",
-    "@tanstack/react-query": "^5.0.0",
-    "lucide-react": "^0.400.0",
-    "sonner": "^1.0.0"
+    "lucide-react": "^0.400.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",
@@ -950,48 +942,43 @@ export default Contact;`,
         },
         instructions: `Complete Setup Instructions for ${safeName}:
 
-1. **Extract all files** to your project directory
-2. **Install dependencies**: Run 'npm install'
-3. **Start development server**: Run 'npm run dev'
-4. **Open browser**: Navigate to http://localhost:5173
+**Quick Start:**
+1. Extract all files to your project directory
+2. Run: npm install
+3. Run: npm run dev
+4. Open: http://localhost:5173
 
-**Application Features:**
-- Modern React 18 with TypeScript
-- Responsive multi-page application
-- Beautiful UI with Tailwind CSS and shadcn/ui components
-- React Router for seamless navigation
-- Interactive forms with validation
-- Professional design with animations
-- Mobile-responsive layout
-- Contact form with toast notifications
-- Services showcase with pricing
-- Team and company information
-- Modern gradient designs and card layouts
+**What's Included:**
+✅ Modern React 18 application with TypeScript
+✅ Multi-page navigation with React Router
+✅ Responsive design with Tailwind CSS
+✅ Professional UI components and layouts
+✅ Contact form with validation
+✅ Mobile-responsive navigation
+✅ SEO-friendly structure
 
-**Pages Included:**
-- Home: Hero section, features, testimonials, CTA
+**Pages:**
+- Home: Hero section, features, testimonials
 - About: Company mission, values, team
 - Services: Service offerings with pricing
-- Contact: Contact form and company information
+- Contact: Contact form and information
 
-**Tech Stack:**
+**Technologies:**
 - React 18 with TypeScript
-- React Router for navigation  
+- React Router for navigation
 - Tailwind CSS for styling
-- shadcn/ui for components
 - Lucide React for icons
-- Sonner for notifications
-- Vite for build tooling
+- Vite for development
 
-**Deployment Ready:**
-Run 'npm run build' for production build
-Deploy to Vercel, Netlify, or any static hosting service`,
-        techStack: ["React", "TypeScript", "Tailwind CSS", "React Router", "shadcn/ui", "Vite"],
+**Deployment:**
+Run 'npm run build' for production
+Deploy to Vercel, Netlify, or any static hosting`,
+        techStack: ["React", "TypeScript", "Tailwind CSS", "React Router", "Lucide React", "Vite"],
         deployUrl: `https://${safeSlug}.vercel.app`
       };
     }
 
-    console.log('Final generated application structure:', Object.keys(generatedCode.files));
+    console.log('Generated application structure:', Object.keys(generatedCode.files));
     return new Response(JSON.stringify(generatedCode), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
