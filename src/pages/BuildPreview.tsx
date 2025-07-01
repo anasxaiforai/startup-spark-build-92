@@ -41,26 +41,48 @@ const BuildPreview = () => {
   const [previewHtml, setPreviewHtml] = useState<string>("");
   const maxCredits = 3;
 
-  const createAdvancedPreviewHtml = (code: GeneratedCode) => {
-    console.log('Creating comprehensive preview HTML with files:', Object.keys(code.files));
+  const createWorkingPreviewHtml = (code: GeneratedCode) => {
+    console.log('Creating working preview HTML with files:', Object.keys(code.files));
     
-    // Get all the React components and ensure they exist
-    const appTsx = code.files["App.tsx"] || "";
-    const headerTsx = code.files["components/Header.tsx"] || "";
-    const footerTsx = code.files["components/Footer.tsx"] || "";
-    const homeTsx = code.files["pages/Home.tsx"] || "";
-    const aboutTsx = code.files["pages/About.tsx"] || "";
-    const contactTsx = code.files["pages/Contact.tsx"] || "";
-    
-    // Clean up the component exports to work in the browser environment
-    const cleanComponent = (componentCode: string) => {
-      return componentCode
+    // Extract components and clean them properly
+    const cleanReactComponent = (componentCode: string, componentName: string) => {
+      if (!componentCode) return `const ${componentName} = () => React.createElement('div', {}, 'Component not found');`;
+      
+      // Remove imports and exports, keep the component logic
+      let cleaned = componentCode
         .replace(/import.*?from.*?;/g, '') // Remove imports
-        .replace(/export default.*?;/g, '') // Remove exports
+        .replace(/export\s+default\s+\w+;?/g, '') // Remove default exports
+        .replace(/export\s+{\s*\w+\s*};?/g, '') // Remove named exports
         .trim();
+      
+      // If the component doesn't start with const/function, wrap it
+      if (!cleaned.startsWith('const ') && !cleaned.startsWith('function ')) {
+        // Extract the component body if it's a function component
+        const match = cleaned.match(/const\s+\w+\s*=\s*\([^)]*\)\s*=>\s*{([\s\S]*)}/) || 
+                     cleaned.match(/function\s+\w+\s*\([^)]*\)\s*{([\s\S]*)}/) ||
+                     cleaned.match(/\([^)]*\)\s*=>\s*{([\s\S]*)}/) ||
+                     cleaned.match(/\([^)]*\)\s*=>\s*([\s\S]*)/);
+        
+        if (match) {
+          const body = match[1] || match[0];
+          cleaned = `const ${componentName} = () => { ${body.includes('return') ? body : `return (${body})`} };`;
+        } else {
+          // Fallback: assume it's JSX
+          cleaned = `const ${componentName} = () => { return (${cleaned}); };`;
+        }
+      }
+      
+      return cleaned;
     };
     
-    // Create a comprehensive HTML document that can run the React app
+    const appCode = cleanReactComponent(code.files["App.tsx"] || "", "App");
+    const headerCode = cleanReactComponent(code.files["components/Header.tsx"] || "", "Header");
+    const footerCode = cleanReactComponent(code.files["components/Footer.tsx"] || "", "Footer");
+    const homeCode = cleanReactComponent(code.files["pages/Home.tsx"] || "", "Home");
+    const aboutCode = cleanReactComponent(code.files["pages/About.tsx"] || "", "About");
+    const contactCode = cleanReactComponent(code.files["pages/Contact.tsx"] || "", "Contact");
+    
+    // Create a comprehensive HTML document
     const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -69,53 +91,45 @@ const BuildPreview = () => {
     <title>${idea}</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-router-dom@6.8.0/dist/umd/react-router-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/react-router-dom@6.8.0/dist/umd/react-router-dom.development.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { 
             margin: 0; 
             padding: 0; 
-            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Inter', system-ui, sans-serif;
             background: #ffffff;
-            line-height: 1.6;
         }
-        * {
-            box-sizing: border-box;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 1rem;
-        }
-        
-        /* Loading animation */
+        * { box-sizing: border-box; }
         .loading {
-            display: inline-block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-size: 18px;
+            color: #666;
+        }
+        .spinner {
             width: 20px;
             height: 20px;
             border: 3px solid #f3f3f3;
             border-top: 3px solid #3498db;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+            margin-right: 12px;
         }
-        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
-        }
-        
-        /* Smooth transitions */
-        .transition-all {
-            transition: all 0.3s ease;
         }
     </style>
 </head>
 <body>
     <div id="root">
-        <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-size: 18px; color: #666;">
-            <div class="loading"></div>
-            <span style="margin-left: 12px;">Loading ${idea}...</span>
+        <div class="loading">
+            <div class="spinner"></div>
+            Loading ${idea}...
         </div>
     </div>
     
@@ -123,38 +137,85 @@ const BuildPreview = () => {
         const { useState, useEffect } = React;
         const { BrowserRouter: Router, Routes, Route, Link, useLocation } = ReactRouterDOM;
 
-        console.log('Starting React application...');
+        console.log('Initializing React application...');
 
-        // Header Component
-        ${cleanComponent(headerTsx)}
+        // Define components
+        ${headerCode}
         
-        // Footer Component  
-        ${cleanComponent(footerTsx)}
+        ${footerCode}
         
-        // Home Component
-        ${cleanComponent(homeTsx)}
+        ${homeCode}
         
-        // About Component
-        ${cleanComponent(aboutTsx)}
+        ${aboutCode}
         
-        // Contact Component
-        ${cleanComponent(contactTsx)}
+        ${contactCode}
         
-        // Main App Component
-        ${cleanComponent(appTsx)}
+        ${appCode}
 
-        // Render the app with error boundary
+        // Error boundary component
+        class ErrorBoundary extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = { hasError: false, error: null };
+            }
+
+            static getDerivedStateFromError(error) {
+                return { hasError: true, error };
+            }
+
+            componentDidCatch(error, errorInfo) {
+                console.error('React Error:', error, errorInfo);
+            }
+
+            render() {
+                if (this.state.hasError) {
+                    return React.createElement('div', {
+                        style: {
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '100vh',
+                            padding: '20px',
+                            textAlign: 'center',
+                            color: '#666'
+                        }
+                    }, [
+                        React.createElement('h2', { key: 'title', style: { color: '#e74c3c', marginBottom: '16px' } }, 'Application Error'),
+                        React.createElement('p', { key: 'message' }, 'There was an error rendering the application.'),
+                        React.createElement('div', {
+                            key: 'error',
+                            style: {
+                                marginTop: '20px',
+                                padding: '20px',
+                                background: '#f8f9fa',
+                                borderRadius: '8px',
+                                borderLeft: '4px solid #e74c3c'
+                            }
+                        }, React.createElement('code', { style: { color: '#333' } }, this.state.error?.message || 'Unknown error'))
+                    ]);
+                }
+
+                return this.props.children;
+            }
+        }
+
+        // Render the application
         try {
-            console.log('Rendering React application...');
+            console.log('Rendering application...');
             const root = ReactDOM.createRoot(document.getElementById('root'));
-            root.render(React.createElement(App));
-            console.log('React application rendered successfully!');
+            root.render(
+                React.createElement(ErrorBoundary, {}, 
+                    React.createElement(App)
+                )
+            );
+            console.log('Application rendered successfully!');
         } catch (error) {
-            console.error('Error rendering React app:', error);
+            console.error('Failed to render application:', error);
             document.getElementById('root').innerHTML = \`
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; text-align: center; color: #666;">
-                    <h2 style="color: #e74c3c; margin-bottom: 16px;">Application Error</h2>
-                    <p>There was an error loading the application. Please check the console for details.</p>
+                    <h2 style="color: #e74c3c; margin-bottom: 16px;">Render Error</h2>
+                    <p>Failed to initialize the React application.</p>
                     <div style="margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #e74c3c;">
                         <code style="color: #333;">\${error.message}</code>
                     </div>
@@ -165,7 +226,7 @@ const BuildPreview = () => {
 </body>
 </html>`;
     
-    console.log('Generated comprehensive preview HTML, length:', html.length);
+    console.log('Generated working preview HTML, length:', html.length);
     return html;
   };
 
@@ -185,19 +246,19 @@ const BuildPreview = () => {
     setBuildComplete(false);
     setPreviewHtml("");
 
-    // Simulate realistic build progress
+    // Simulate build progress
     const progressInterval = setInterval(() => {
       setBuildProgress(prev => {
         if (prev >= 85) {
           clearInterval(progressInterval);
-          return 85; // Wait for AI response before completing
+          return 85;
         }
         return prev + Math.random() * 8 + 2;
       });
     }, 800);
 
     try {
-      console.log('Starting comprehensive code generation with prompt:', prompt);
+      console.log('Starting code generation with prompt:', prompt);
       
       const { data, error } = await supabase.functions.invoke('generate-code', {
         body: { 
@@ -211,19 +272,16 @@ const BuildPreview = () => {
         throw error;
       }
 
-      console.log('Generated comprehensive code response:', data);
-      console.log('Files generated:', Object.keys(data.files || {}));
-      
+      console.log('Code generation successful:', data);
       setGeneratedCode(data);
       
-      // Create advanced preview HTML with error handling
+      // Create working preview HTML
       try {
-        const html = createAdvancedPreviewHtml(data);
+        const html = createWorkingPreviewHtml(data);
         setPreviewHtml(html);
         console.log('Preview HTML created successfully');
       } catch (previewError) {
         console.error('Error creating preview HTML:', previewError);
-        // Still mark as complete even if preview fails
       }
       
       setBuildProgress(100);
@@ -251,7 +309,7 @@ const BuildPreview = () => {
   const handleDownloadCode = () => {
     if (!generatedCode) return;
 
-    // Create and download all files
+    // Download all files
     Object.entries(generatedCode.files).forEach(([filename, content]) => {
       const blob = new Blob([content], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
@@ -264,7 +322,7 @@ const BuildPreview = () => {
       URL.revokeObjectURL(url);
     });
 
-    // Download setup instructions
+    // Download instructions
     const instructionsBlob = new Blob([generatedCode.instructions], { type: 'text/plain' });
     const instructionsUrl = URL.createObjectURL(instructionsBlob);
     const instructionsLink = document.createElement('a');
@@ -297,7 +355,7 @@ const BuildPreview = () => {
     
     if (newWindow) {
       newWindow.onload = () => {
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
       };
     } else {
       toast({
