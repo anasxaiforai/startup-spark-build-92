@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -39,7 +38,41 @@ const BuildPreview = () => {
   const [creditsUsed, setCreditsUsed] = useState(2);
   const [generatedCode, setGeneratedCode] = useState<GeneratedCode | null>(null);
   const [buildComplete, setBuildComplete] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState<string>("");
   const maxCredits = 3;
+
+  const createPreviewHtml = (code: GeneratedCode) => {
+    const appTsx = code.files["App.tsx"] || "";
+    const packageJson = code.files["package.json"] || "{}";
+    
+    // Create a simple HTML preview with the React code
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${idea}</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        ${appTsx.replace('export default App;', `
+        ReactDOM.render(React.createElement(App), document.getElementById('root'));
+        `)}
+    </script>
+</body>
+</html>`;
+    
+    return html;
+  };
 
   const handleStartBuild = async () => {
     if (creditsUsed >= maxCredits) {
@@ -55,6 +88,7 @@ const BuildPreview = () => {
     setBuildProgress(0);
     setGeneratedCode(null);
     setBuildComplete(false);
+    setPreviewHtml("");
 
     // Simulate build progress
     const progressInterval = setInterval(() => {
@@ -84,6 +118,11 @@ const BuildPreview = () => {
 
       console.log('Generated code response:', data);
       setGeneratedCode(data);
+      
+      // Create preview HTML
+      const html = createPreviewHtml(data);
+      setPreviewHtml(html);
+      
       setBuildProgress(100);
       setBuildComplete(true);
       setCreditsUsed(prev => prev + 1);
@@ -207,90 +246,100 @@ const BuildPreview = () => {
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center space-x-2">
                       <Eye className="w-5 h-5" />
-                      <span>Generated Application</span>
+                      <span>Live Preview</span>
                     </CardTitle>
-                    {buildComplete && (
+                    {buildComplete && previewHtml && (
                       <Button 
                         variant="outline" 
                         size="sm" 
                         className="glass-card hover:bg-white/10"
-                        onClick={() => window.open(generatedCode?.deployUrl, '_blank')}
-                        disabled={!generatedCode?.deployUrl}
+                        onClick={() => {
+                          const blob = new Blob([previewHtml], { type: 'text/html' });
+                          const url = URL.createObjectURL(blob);
+                          window.open(url, '_blank');
+                        }}
                       >
                         <ExternalLink className="w-4 h-4 mr-2" />
-                        Preview App
+                        Open in New Tab
                       </Button>
                     )}
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="aspect-video bg-gradient-to-br from-electric-blue/10 to-electric-purple/10 rounded-lg border border-white/20 flex items-center justify-center">
-                    {buildComplete && generatedCode ? (
-                      <div className="text-center">
-                        <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-400" />
-                        <h3 className="text-xl font-semibold mb-2">Your App is Ready!</h3>
-                        <p className="text-muted-foreground mb-4">
-                          {idea} has been successfully built and is ready to use.
-                        </p>
-                        <div className="flex justify-center space-x-3">
-                          <Button 
-                            onClick={handleDownloadCode}
-                            className="bg-gradient-to-r from-electric-blue to-electric-purple hover:opacity-90"
-                          >
-                            <Download className="w-4 h-4 mr-2" />
-                            Download Code
-                          </Button>
-                          <Button variant="outline" className="glass-card hover:bg-white/10">
-                            <FileText className="w-4 h-4 mr-2" />
-                            View Files
-                          </Button>
-                        </div>
-                        {generatedCode.techStack && (
-                          <div className="mt-4">
-                            <p className="text-sm text-muted-foreground mb-2">Tech Stack:</p>
-                            <div className="flex justify-center space-x-2">
-                              {generatedCode.techStack.map((tech) => (
-                                <Badge key={tech} variant="secondary" className="text-xs">
-                                  {tech}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                  <div className="aspect-video bg-gradient-to-br from-electric-blue/10 to-electric-purple/10 rounded-lg border border-white/20 overflow-hidden">
+                    {buildComplete && previewHtml ? (
+                      <iframe
+                        srcDoc={previewHtml}
+                        className="w-full h-full border-0"
+                        title="App Preview"
+                        sandbox="allow-scripts allow-same-origin"
+                      />
                     ) : isBuilding ? (
-                      <div className="text-center">
-                        <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-electric-blue to-electric-purple rounded-full flex items-center justify-center animate-pulse">
-                          <Code className="w-8 h-8 text-white" />
-                        </div>
-                        <h3 className="text-xl font-semibold mb-2">Building Your App...</h3>
-                        <p className="text-muted-foreground mb-4">
-                          AI is generating your application code. This usually takes 1-2 minutes.
-                        </p>
-                        <div className="text-sm text-muted-foreground">
-                          Progress: {Math.round(buildProgress)}%
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-electric-blue to-electric-purple rounded-full flex items-center justify-center animate-pulse">
+                            <Code className="w-8 h-8 text-white" />
+                          </div>
+                          <h3 className="text-xl font-semibold mb-2">Building Your App...</h3>
+                          <p className="text-muted-foreground mb-4">
+                            AI is generating your application code. This usually takes 1-2 minutes.
+                          </p>
+                          <div className="text-sm text-muted-foreground">
+                            Progress: {Math.round(buildProgress)}%
+                          </div>
                         </div>
                       </div>
                     ) : (
-                      <div className="text-center">
-                        <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-electric-blue to-electric-purple rounded-full flex items-center justify-center">
-                          <Code className="w-8 h-8 text-white" />
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-electric-blue to-electric-purple rounded-full flex items-center justify-center">
+                            <Code className="w-8 h-8 text-white" />
+                          </div>
+                          <h3 className="text-xl font-semibold mb-2">Ready to Build</h3>
+                          <p className="text-muted-foreground mb-4">
+                            Generate a complete, production-ready application from your optimized prompt.
+                          </p>
+                          <Button 
+                            onClick={handleStartBuild}
+                            disabled={creditsUsed >= maxCredits}
+                            className="bg-gradient-to-r from-electric-blue to-electric-purple hover:opacity-90"
+                          >
+                            <Play className="w-4 h-4 mr-2" />
+                            {creditsUsed >= maxCredits ? "Upgrade to Continue" : "Start Building"}
+                          </Button>
                         </div>
-                        <h3 className="text-xl font-semibold mb-2">Ready to Build</h3>
-                        <p className="text-muted-foreground mb-4">
-                          Generate a complete, production-ready application from your optimized prompt.
-                        </p>
-                        <Button 
-                          onClick={handleStartBuild}
-                          disabled={creditsUsed >= maxCredits}
-                          className="bg-gradient-to-r from-electric-blue to-electric-purple hover:opacity-90"
-                        >
-                          <Play className="w-4 h-4 mr-2" />
-                          {creditsUsed >= maxCredits ? "Upgrade to Continue" : "Start Building"}
-                        </Button>
                       </div>
                     )}
                   </div>
+                  
+                  {buildComplete && generatedCode && (
+                    <div className="mt-4 flex justify-center space-x-3">
+                      <Button 
+                        onClick={handleDownloadCode}
+                        className="bg-gradient-to-r from-electric-blue to-electric-purple hover:opacity-90"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download Code
+                      </Button>
+                      <Button variant="outline" className="glass-card hover:bg-white/10">
+                        <FileText className="w-4 h-4 mr-2" />
+                        View Files
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {generatedCode?.techStack && (
+                    <div className="mt-4 text-center">
+                      <p className="text-sm text-muted-foreground mb-2">Tech Stack:</p>
+                      <div className="flex justify-center space-x-2 flex-wrap">
+                        {generatedCode.techStack.map((tech) => (
+                          <Badge key={tech} variant="secondary" className="text-xs">
+                            {tech}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
