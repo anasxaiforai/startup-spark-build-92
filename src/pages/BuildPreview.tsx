@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,40 +16,136 @@ import {
   ExternalLink,
   CheckCircle,
   Clock,
-  Play
+  Play,
+  FileText
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+
+interface GeneratedCode {
+  files: Record<string, string>;
+  instructions: string;
+  techStack: string[];
+  deployUrl: string;
+}
 
 const BuildPreview = () => {
   const location = useLocation();
   const prompt = location.state?.prompt || "Build a modern web application";
   const idea = location.state?.idea || "AI-powered task management app";
   
-  const [buildProgress, setBuildProgress] = useState(75);
+  const [buildProgress, setBuildProgress] = useState(0);
   const [isBuilding, setIsBuilding] = useState(false);
   const [creditsUsed, setCreditsUsed] = useState(2);
+  const [generatedCode, setGeneratedCode] = useState<GeneratedCode | null>(null);
+  const [buildComplete, setBuildComplete] = useState(false);
   const maxCredits = 3;
 
-  const handleStartBuild = () => {
-    setIsBuilding(true);
-    const interval = setInterval(() => {
-      setBuildProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsBuilding(false);
-          return 100;
-        }
-        return prev + 5;
+  const handleStartBuild = async () => {
+    if (creditsUsed >= maxCredits) {
+      toast({
+        title: "Credit limit reached",
+        description: "Please upgrade your plan to continue building.",
+        variant: "destructive"
       });
-    }, 200);
+      return;
+    }
+
+    setIsBuilding(true);
+    setBuildProgress(0);
+    setGeneratedCode(null);
+    setBuildComplete(false);
+
+    // Simulate build progress
+    const progressInterval = setInterval(() => {
+      setBuildProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90; // Wait for AI response before completing
+        }
+        return prev + Math.random() * 15;
+      });
+    }, 500);
+
+    try {
+      console.log('Starting code generation with prompt:', prompt);
+      
+      const { data, error } = await supabase.functions.invoke('generate-code', {
+        body: { 
+          prompt: prompt,
+          projectName: idea
+        }
+      });
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      console.log('Generated code response:', data);
+      setGeneratedCode(data);
+      setBuildProgress(100);
+      setBuildComplete(true);
+      setCreditsUsed(prev => prev + 1);
+      
+      toast({
+        title: "Build completed!",
+        description: "Your application has been generated successfully.",
+      });
+    } catch (error) {
+      console.error('Error generating code:', error);
+      toast({
+        title: "Build failed",
+        description: "There was an error generating your application. Please try again.",
+        variant: "destructive"
+      });
+      setBuildProgress(0);
+    } finally {
+      clearInterval(progressInterval);
+      setIsBuilding(false);
+    }
+  };
+
+  const handleDownloadCode = () => {
+    if (!generatedCode) return;
+
+    // Create a zip-like structure by creating multiple files
+    Object.entries(generatedCode.files).forEach(([filename, content]) => {
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // Also download instructions
+    const instructionsBlob = new Blob([generatedCode.instructions], { type: 'text/plain' });
+    const instructionsUrl = URL.createObjectURL(instructionsBlob);
+    const instructionsLink = document.createElement('a');
+    instructionsLink.href = instructionsUrl;
+    instructionsLink.download = 'SETUP_INSTRUCTIONS.txt';
+    document.body.appendChild(instructionsLink);
+    instructionsLink.click();
+    document.body.removeChild(instructionsLink);
+    URL.revokeObjectURL(instructionsUrl);
+
+    toast({
+      title: "Code downloaded!",
+      description: "All project files have been downloaded to your computer.",
+    });
   };
 
   const buildSteps = [
-    { name: "Setting up project structure", completed: true },
-    { name: "Installing dependencies", completed: true },
-    { name: "Generating components", completed: true },
-    { name: "Creating API routes", completed: buildProgress > 80 },
-    { name: "Setting up database", completed: buildProgress > 90 },
-    { name: "Deploying application", completed: buildProgress === 100 }
+    { name: "Setting up project structure", completed: buildProgress > 10 },
+    { name: "Installing dependencies", completed: buildProgress > 30 },
+    { name: "Generating components", completed: buildProgress > 50 },
+    { name: "Creating API routes", completed: buildProgress > 70 },
+    { name: "Setting up styling", completed: buildProgress > 85 },
+    { name: "Finalizing application", completed: buildComplete }
   ];
 
   return (
@@ -78,11 +174,11 @@ const BuildPreview = () => {
                     <div>
                       <h3 className="text-lg font-semibold">Building: {idea}</h3>
                       <p className="text-sm text-muted-foreground">
-                        {isBuilding ? "Building in progress..." : buildProgress === 100 ? "Build complete!" : "Ready to build"}
+                        {isBuilding ? "Building in progress..." : buildComplete ? "Build complete!" : "Ready to build"}
                       </p>
                     </div>
-                    <Badge variant={buildProgress === 100 ? "default" : "secondary"}>
-                      {buildProgress === 100 ? "Complete" : `${buildProgress}%`}
+                    <Badge variant={buildComplete ? "default" : "secondary"}>
+                      {buildComplete ? "Complete" : `${Math.round(buildProgress)}%`}
                     </Badge>
                   </div>
                   
@@ -111,51 +207,87 @@ const BuildPreview = () => {
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center space-x-2">
                       <Eye className="w-5 h-5" />
-                      <span>Live Preview</span>
+                      <span>Generated Application</span>
                     </CardTitle>
-                    <Button variant="outline" size="sm" className="glass-card hover:bg-white/10">
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      Open in New Tab
-                    </Button>
+                    {buildComplete && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="glass-card hover:bg-white/10"
+                        onClick={() => window.open(generatedCode?.deployUrl, '_blank')}
+                        disabled={!generatedCode?.deployUrl}
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Preview App
+                      </Button>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="aspect-video bg-gradient-to-br from-electric-blue/10 to-electric-purple/10 rounded-lg border border-white/20 flex items-center justify-center">
-                    {buildProgress === 100 ? (
+                    {buildComplete && generatedCode ? (
                       <div className="text-center">
                         <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-400" />
                         <h3 className="text-xl font-semibold mb-2">Your App is Ready!</h3>
                         <p className="text-muted-foreground mb-4">
-                          Your AI-powered task management app has been successfully built and deployed.
+                          {idea} has been successfully built and is ready to use.
                         </p>
-                        <Button className="bg-gradient-to-r from-electric-blue to-electric-purple hover:opacity-90">
-                          <Play className="w-4 h-4 mr-2" />
-                          Launch App
-                        </Button>
+                        <div className="flex justify-center space-x-3">
+                          <Button 
+                            onClick={handleDownloadCode}
+                            className="bg-gradient-to-r from-electric-blue to-electric-purple hover:opacity-90"
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            Download Code
+                          </Button>
+                          <Button variant="outline" className="glass-card hover:bg-white/10">
+                            <FileText className="w-4 h-4 mr-2" />
+                            View Files
+                          </Button>
+                        </div>
+                        {generatedCode.techStack && (
+                          <div className="mt-4">
+                            <p className="text-sm text-muted-foreground mb-2">Tech Stack:</p>
+                            <div className="flex justify-center space-x-2">
+                              {generatedCode.techStack.map((tech) => (
+                                <Badge key={tech} variant="secondary" className="text-xs">
+                                  {tech}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    ) : (
+                    ) : isBuilding ? (
                       <div className="text-center">
                         <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-electric-blue to-electric-purple rounded-full flex items-center justify-center animate-pulse">
                           <Code className="w-8 h-8 text-white" />
                         </div>
-                        <h3 className="text-xl font-semibold mb-2">
-                          {isBuilding ? "Building Your App..." : "Ready to Build"}
-                        </h3>
+                        <h3 className="text-xl font-semibold mb-2">Building Your App...</h3>
                         <p className="text-muted-foreground mb-4">
-                          {isBuilding 
-                            ? "Your application is being generated. This usually takes 2-3 minutes."
-                            : "Click the button below to start building your application."
-                          }
+                          AI is generating your application code. This usually takes 1-2 minutes.
                         </p>
-                        {!isBuilding && buildProgress < 100 && (
-                          <Button 
-                            onClick={handleStartBuild}
-                            className="bg-gradient-to-r from-electric-blue to-electric-purple hover:opacity-90"
-                          >
-                            <Play className="w-4 h-4 mr-2" />
-                            Start Building
-                          </Button>
-                        )}
+                        <div className="text-sm text-muted-foreground">
+                          Progress: {Math.round(buildProgress)}%
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-electric-blue to-electric-purple rounded-full flex items-center justify-center">
+                          <Code className="w-8 h-8 text-white" />
+                        </div>
+                        <h3 className="text-xl font-semibold mb-2">Ready to Build</h3>
+                        <p className="text-muted-foreground mb-4">
+                          Generate a complete, production-ready application from your optimized prompt.
+                        </p>
+                        <Button 
+                          onClick={handleStartBuild}
+                          disabled={creditsUsed >= maxCredits}
+                          className="bg-gradient-to-r from-electric-blue to-electric-purple hover:opacity-90"
+                        >
+                          <Play className="w-4 h-4 mr-2" />
+                          {creditsUsed >= maxCredits ? "Upgrade to Continue" : "Start Building"}
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -205,7 +337,8 @@ const BuildPreview = () => {
                   <Button 
                     variant="outline" 
                     className="w-full glass-card hover:bg-white/10"
-                    disabled={buildProgress < 100}
+                    disabled={!buildComplete}
+                    onClick={handleDownloadCode}
                   >
                     <Download className="w-4 h-4 mr-2" />
                     Export Code
@@ -214,7 +347,7 @@ const BuildPreview = () => {
                     <Button 
                       variant="outline" 
                       className="w-full glass-card hover:bg-white/10"
-                      disabled={buildProgress < 100}
+                      disabled={!buildComplete}
                     >
                       <Eye className="w-4 h-4 mr-2" />
                       Smart Feedback
@@ -233,20 +366,33 @@ const BuildPreview = () => {
                     <h4 className="font-semibold mb-1">Project Name</h4>
                     <p className="text-sm text-muted-foreground">{idea}</p>
                   </div>
-                  <div>
-                    <h4 className="font-semibold mb-1">Tech Stack</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {["React", "TypeScript", "Tailwind", "Supabase"].map((tech) => (
-                        <Badge key={tech} variant="secondary" className="text-xs">
-                          {tech}
-                        </Badge>
-                      ))}
+                  {generatedCode?.techStack ? (
+                    <div>
+                      <h4 className="font-semibold mb-1">Tech Stack</h4>
+                      <div className="flex flex-wrap gap-1">
+                        {generatedCode.techStack.map((tech) => (
+                          <Badge key={tech} variant="secondary" className="text-xs">
+                            {tech}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div>
+                      <h4 className="font-semibold mb-1">Expected Tech Stack</h4>
+                      <div className="flex flex-wrap gap-1">
+                        {["React", "TypeScript", "Tailwind", "Vite"].map((tech) => (
+                          <Badge key={tech} variant="secondary" className="text-xs">
+                            {tech}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <h4 className="font-semibold mb-1">Status</h4>
-                    <Badge variant={buildProgress === 100 ? "default" : "secondary"}>
-                      {buildProgress === 100 ? "Deployed" : "In Progress"}
+                    <Badge variant={buildComplete ? "default" : "secondary"}>
+                      {buildComplete ? "Ready" : isBuilding ? "Building" : "Pending"}
                     </Badge>
                   </div>
                 </CardContent>
