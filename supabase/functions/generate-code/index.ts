@@ -16,7 +16,7 @@ serve(async (req) => {
     const { prompt, projectName } = await req.json();
     console.log('Received request:', { prompt: prompt?.substring(0, 100), projectName });
 
-    // Use the Lyzr AI agent
+    // Use the Lyzr AI agent with corrected API call
     console.log('Calling Lyzr AI agent...');
     const agentResponse = await fetch('https://api.lyzr.ai/v3/chat/completions', {
       method: 'POST',
@@ -25,50 +25,56 @@ serve(async (req) => {
         'x-api-key': 'lyzr-key-d4c3b2a1f9e8d7c6b5a49382716e5d4c'
       },
       body: JSON.stringify({
-        "user_id": "web-app-builder",
-        "agent_id": "67740e0fae6188ce2fb9a1bc",
-        "session_id": `build-${Date.now()}`,
-        "message": `Build a complete web application for: ${projectName}
+        user_id: "web-app-builder",
+        agent_id: "67740e0fae6188ce2fb9a1bc",
+        session_id: `build-${Date.now()}`,
+        message: `Project: ${projectName}
 
-User requirements: ${prompt}
+Requirements: ${prompt}
 
-Please generate a fully functional React application with the following structure and return it as JSON:
+Generate a complete, production-ready React web application. Return the response as a JSON object with this exact structure:
 
 {
   "files": {
-    "App.tsx": "complete React app code here",
-    "components/Navbar.tsx": "navbar component code",
-    "components/Footer.tsx": "footer component code", 
-    "pages/Home.tsx": "home page component",
-    "pages/About.tsx": "about page component",
-    "pages/Contact.tsx": "contact page component",
-    "package.json": "package.json with all dependencies"
+    "App.tsx": "complete React app code",
+    "components/Navbar.tsx": "navbar component",
+    "components/Footer.tsx": "footer component", 
+    "pages/Home.tsx": "home page",
+    "pages/About.tsx": "about page",
+    "pages/Contact.tsx": "contact page",
+    "package.json": "complete package.json"
   },
-  "instructions": "setup and deployment instructions",
-  "techStack": ["React", "TypeScript", "Tailwind CSS", "React Router"],
-  "deployUrl": "suggested deployment URL"
+  "instructions": "setup instructions",
+  "techStack": ["React", "TypeScript", "Tailwind CSS"],
+  "deployUrl": "deployment URL"
 }
 
-Make it modern, responsive, and production-ready with Tailwind CSS styling.`
+Use React 18, TypeScript, Tailwind CSS, and React Router. Make it responsive and modern.`
       })
     });
 
     console.log('Agent response status:', agentResponse.status);
+    console.log('Agent response headers:', Object.fromEntries(agentResponse.headers.entries()));
 
     if (!agentResponse.ok) {
       const errorText = await agentResponse.text();
-      console.error('Agent API error:', agentResponse.status, errorText);
+      console.error('Agent API error details:', {
+        status: agentResponse.status,
+        statusText: agentResponse.statusText,
+        body: errorText
+      });
       throw new Error(`Agent API returned ${agentResponse.status}: ${errorText}`);
     }
 
     const agentData = await agentResponse.json();
-    console.log('Agent response received, type:', typeof agentData);
+    console.log('Agent response received:', agentData);
 
     // Try to extract structured data from the response
     let generatedCode;
     try {
-      const responseText = agentData.response || agentData.message || agentData.content || JSON.stringify(agentData);
-      console.log('Response text length:', responseText.length);
+      // Check different possible response structures
+      const responseText = agentData.response || agentData.message || agentData.content || agentData.choices?.[0]?.message?.content || JSON.stringify(agentData);
+      console.log('Processing response text:', responseText.substring(0, 200));
       
       // Look for JSON structure in the response
       const jsonMatch = responseText.match(/\{[\s\S]*"files"[\s\S]*\}/);
@@ -76,10 +82,11 @@ Make it modern, responsive, and production-ready with Tailwind CSS styling.`
         generatedCode = JSON.parse(jsonMatch[0]);
         console.log('Successfully parsed agent JSON response');
       } else {
+        console.log('No JSON structure found, using fallback');
         throw new Error('No valid JSON structure found in agent response');
       }
     } catch (parseError) {
-      console.log('Failed to parse agent response, using fallback:', parseError.message);
+      console.log('Failed to parse agent response, using comprehensive fallback:', parseError.message);
       
       // Create a comprehensive fallback application
       const safeName = (projectName || 'Modern Web App').replace(/[^a-zA-Z0-9\s]/g, '').trim();
